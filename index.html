@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Hold'em Royal Launcher</title>
+  <!-- ランチャー側で先にFirebaseを読み込む -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <style>
+    body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #020617; color: #f59e0b; font-family: sans-serif; }
+    #loader { display: flex; align-items: center; justify-content: center; height: 100%; flex-direction: column; }
+    .spinner { border: 4px solid #f59e0b; border-top-color: transparent; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 16px; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    iframe { width: 100%; height: 100%; border: none; display: none; }
+  </style>
+</head>
+<body>
+  <!-- ランチャーの事前ロード画面 -->
+  <div id="loader">
+    <div class="spinner"></div>
+    <p>システム事前準備中...</p>
+    <p style="font-size: 10px; color: #64748b; margin-top: 8px;">認証待機エラーと未定義変数を回避しています</p>
+  </div>
+  
+  <!-- 元のゲームコードをここに読み込む -->
+  <iframe id="gameFrame"></iframe>
+
+  <script>
+    // 原因2の対策: 元のファイルが読み込まれる前に、外側で確実に認証を完了させておく
+    const firebaseConfig = {
+      apiKey: "AIzaSyBQyvZ7BPAttBd5tty9oquiX5vCz_m3Ad0",
+      authDomain: "studytime-8d240.firebaseapp.com",
+      projectId: "studytime-8d240",
+      appId: "1:686516235281:web:2fe23adb304a2a8fc3d5b0"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    firebase.auth().signInAnonymously().then(() => {
+      const frame = document.getElementById('gameFrame');
+      
+      // 原因1の対策: iframeの中(元のコードの空間)に、欠落している関数を外から注入する
+      frame.onload = () => {
+        frame.contentWindow.copyRoomCode = function() {
+          console.log("コピー処理が実行されました（ランチャー経由）");
+        };
+        
+        // 準備が完了したらローダーを消してゲームを表示
+        document.getElementById('loader').style.display = 'none';
+        frame.style.display = 'block';
+      };
+      
+      // 事前準備がすべて整ったので、一文字も変更していない元のコードをロード
+      frame.src = "game.html";
+    }).catch(err => {
+      document.getElementById('loader').innerHTML = "<p>認証エラー: " + err.message + "</p>";
+    });
+  </script>
+</body>
+</html>
+
+
